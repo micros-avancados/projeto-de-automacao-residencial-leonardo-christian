@@ -5,12 +5,16 @@
 
 //defines:
 //defines de id mqtt e tópicos para publicação e subscribe
-#define TOPICO_SUBSCRIBE "ProjEmbarcadosEnvia"     //tópico MQTT de escuta
-#define TOPICO_PUBLISH   "ProjEmbarcadosRecebe"    //tópico MQTT de envio de informações para Broker
+#define TEMPERATURA_SUBSCRIBE "mcu/temperatura/Envia"     //tópico MQTT de escuta
+#define TEMPERATURA_PUBLISH   "mcu/temperatura/Recebe"    //tópico MQTT de envio de informações para Broker
                                                    //IMPORTANTE: recomendamos fortemente alterar os nomes
                                                    //            desses tópicos. Caso contrário, há grandes
                                                    //            chances de você controlar e monitorar o NodeMCU
                                                    //            de outra pessoa.
+#define SAIDA_SUBSCRIBE "mcu/saida/Envia"    
+#define SAIDA_PUBLISH   "mcu/saida/Recebe"
+
+
 #define ID_MQTT  "SessaoProjEmbarcados"     //id mqtt (para identificação de sessão)
                                //IMPORTANTE: este deve ser único no broker (ou seja, 
                                //            se um client MQTT tentar entrar com o mesmo 
@@ -151,7 +155,8 @@ void reconnectMQTT()
         if (MQTT.connect(ID_MQTT)) 
         {
             Serial.println("Conectado com sucesso ao broker MQTT!");
-            MQTT.subscribe(TOPICO_SUBSCRIBE); 
+            MQTT.subscribe(TEMPERATURA_SUBSCRIBE); 
+       
         } 
         else 
         {
@@ -256,13 +261,14 @@ void loop()
 
     String temperatura = getTemperatura();
 
-    String payload = "{\"temperatura\":";
-           payload += temperatura;
-           payload += ",\"estado\":";
-           payload += estado;
-           payload += "}";
+    String payload_temperatura = "{temperatura:"+temperatura+"}";
     
-    MQTT.publish(TOPICO_PUBLISH, payload.c_str());
+    MQTT.publish(TEMPERATURA_PUBLISH, payload_temperatura.c_str());
+
+    String payload_saida = "{saida:"+estado+"}";
+    MQTT.publish(SAIDA_PUBLISH, payload_saida.c_str());
+
+
     //keep-alive da comunicação com broker MQTT
     MQTT.loop();
 }

@@ -22,21 +22,26 @@
 			
 			$('#liga-output').click(function() {
 				var payload = "L";  
-				var TopicPublish = $('#pub-topic-text')[0].value;				
+				var TopicPublish = "mcu/temperatura/Envia";				
 				mosq.publish(TopicPublish, payload, 0);
 			});
 
 			
 			$('#desliga-output').click(function() {
 				var payload = "D";  
-				var TopicPublish = $('#pub-topic-text')[0].value;				
+				var TopicPublish ="mcu/temperatura/Envia";				
 				mosq.publish(TopicPublish, payload, 0);
 			});
 
 			mosq.onconnect = function(rc){
 				var p = document.createElement("p");
-				var topic = $('#pub-subscribe-text')[0].value;
-				p.innerHTML = "Conectado ao Broker!";
+				var topic = "mcu/temperatura/Recebe";
+				p.innerHTML = "Conectado ao Broker temperatura!";
+				$("#debug").append(p);
+				mosq.subscribe(topic, 0);
+
+				var topic = "mcu/saida/Recebe";
+				p.innerHTML = "Conectado ao Broker saida!";
 				$("#debug").append(p);
 				mosq.subscribe(topic, 0);
 				
@@ -52,7 +57,23 @@
 			mosq.onmessage = function(topic, payload, qos){
 				var p = document.createElement("p");
 				var acao = payload[0];
-				console.log(payload);
+				var saida = payload.includes("saida");
+
+				var temperatura = payload.includes("temperatura");
+
+				if (saida)
+				{
+					console.log(payload);
+				}
+
+				if (temperatura)
+				{
+					p.innerHTML = payload
+					$("#status_io").html(p);
+					
+				}
+					
+				
 				//escreve o estado do output conforme informação recebida
 				/*
 				if (acao == 'L')
@@ -60,8 +81,6 @@
 				else
 					p.innerHTML = "<center><img src='desligado.png'></center>"
 				*/
-					p.innerHTML = payload
-				$("#status_io").html(p);
 			};
 		}
 		Page.prototype.connect = function(){
