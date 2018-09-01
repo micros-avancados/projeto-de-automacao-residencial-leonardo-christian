@@ -22,14 +22,14 @@
 			
 			$('#liga-output').click(function() {
 				var payload = "L";  
-				var TopicPublish = "mcu/temperatura/Envia";				
+				var TopicPublish = "mcu/temperatura/EnviaSensor";				
 				mosq.publish(TopicPublish, payload, 0);
 			});
 
 			
 			$('#desliga-output').click(function() {
 				var payload = "D";  
-				var TopicPublish ="mcu/temperatura/Envia";				
+				var TopicPublish ="mcu/temperatura/EnviaSensor";				
 				mosq.publish(TopicPublish, payload, 0);
 			});
 
@@ -41,6 +41,16 @@
 				mosq.subscribe(topic, 0);
 
 				var topic = "mcu/saida/Recebe";
+				p.innerHTML = "Conectado ao Broker saida!";
+				$("#debug").append(p);
+				mosq.subscribe(topic, 0);
+
+				var topic = "mcu/temperatura/RecebeSensor";
+				p.innerHTML = "Conectado ao Broker temperatura!";
+				$("#debug").append(p);
+				mosq.subscribe(topic, 0);
+
+				var topic = "mcu/saida/RecebeSensor";
 				p.innerHTML = "Conectado ao Broker saida!";
 				$("#debug").append(p);
 				mosq.subscribe(topic, 0);
@@ -57,6 +67,7 @@
 			mosq.onmessage = function(topic, payload, qos){
 				var p = document.createElement("p");
 				var acao = payload[0];
+				
 				var saida = payload.includes("saida");
 
 				var temperatura = payload.includes("temperatura");
@@ -70,6 +81,10 @@
 				{
 					p.innerHTML = payload
 					$("#status_io").html(p);
+					
+					var payload = temperatura;  
+					var TopicPublish = "mcu/temperatura/EnviaSensor";				
+					mosq.publish(TopicPublish, payload, 0);
 					
 				}
 					

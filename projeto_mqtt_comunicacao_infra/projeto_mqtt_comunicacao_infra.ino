@@ -5,17 +5,17 @@
 
 //defines:
 //defines de id mqtt e tópicos para publicação e subscribe
-#define TEMPERATURA_SUBSCRIBE "mcu/temperatura/Envia"     //tópico MQTT de escuta
-#define TEMPERATURA_PUBLISH   "mcu/temperatura/Recebe"    //tópico MQTT de envio de informações para Broker
+#define TEMPERATURA_SUBSCRIBE "mcu/temperatura/EnviaSensor"     //tópico MQTT de escuta
+#define TEMPERATURA_PUBLISH   "mcu/temperatura/RecebeSensor"    //tópico MQTT de envio de informações para Broker
                                                    //IMPORTANTE: recomendamos fortemente alterar os nomes
                                                    //            desses tópicos. Caso contrário, há grandes
                                                    //            chances de você controlar e monitorar o NodeMCU
                                                    //            de outra pessoa.
-#define SAIDA_SUBSCRIBE "mcu/saida/Envia"    
-#define SAIDA_PUBLISH   "mcu/saida/Recebe"
+#define SAIDA_SUBSCRIBE "mcu/saida/EnviaSensor"    
+#define SAIDA_PUBLISH   "mcu/saida/RecebeSensor"
 
 
-#define ID_MQTT  "SessaoProjEmbarcadosB"     //id mqtt (para identificação de sessão)
+#define ID_MQTT  "SessaoProjEmbarcadosA"     //id mqtt (para identificação de sessão)
                                //IMPORTANTE: este deve ser único no broker (ou seja, 
                                //            se um client MQTT tentar entrar com o mesmo 
                                //            id de outro já conectado ao broker, o broker 
@@ -127,6 +127,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
     //verifica se deve colocar nivel alto de tensão na saída D0:
     //IMPORTANTE: o Led já contido na placa é acionado com lógica invertida (ou seja,
     //enviar HIGH para o output faz o Led apagar / enviar LOW faz o Led acender)
+    Serial.println(msg);
     if (msg.equals("L"))
     {
         digitalWrite(D0, LOW);
@@ -212,7 +213,7 @@ String getTemperatura(void)
     float millivolts = (analogRead(A0)/1024.0) * 3300; //3300 is the voltage provided by NodeMCU
     float temp_c = millivolts/10;
 
-    Serial.println("Temperatura:" + String(temp_c));
+    //Serial.println("Temperatura:" + String(temp_c));
     
     //MQTT.publish(TOPICO_PUBLISH, String(temp_c).c_str());
 
@@ -261,9 +262,9 @@ void loop()
 
     String temperatura = getTemperatura();
 
-    String payload_temperatura = "{temperatura:"+temperatura+"}";
+    //String payload_temperatura = "{temperatura:"+temperatura+"}";
     
-    MQTT.publish(TEMPERATURA_PUBLISH, payload_temperatura.c_str());
+    //MQTT.publish(TEMPERATURA_PUBLISH, payload_temperatura.c_str());
 
     String payload_saida = "{saida:"+estado+"}";
     MQTT.publish(SAIDA_PUBLISH, payload_saida.c_str());
