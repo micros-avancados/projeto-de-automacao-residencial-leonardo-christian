@@ -261,12 +261,12 @@ void loop()
 
     String temperatura = getTemperatura();
 
-    String payload_temperatura = "{temperatura:"+temperatura+"}";
+    String payload_temperatura = temperatura;
     
     MQTT.publish(TEMPERATURA_PUBLISH, payload_temperatura.c_str());
 
-    String payload_saida = "{saida:"+estado+"}";
-    MQTT.publish(SAIDA_PUBLISH, payload_saida.c_str());
+    //String payload_saida = "{saida:"+estado+"}";
+    //MQTT.publish(SAIDA_PUBLISH, payload_saida.c_str());
 
 
     //keep-alive da comunicação com broker MQTT

@@ -18,38 +18,31 @@
 	<table border ="0" width="100%">
 		
 			<td bgcolor = "#2980b9" width="70%">
-				<center><font color =white><h1>MQTT</h1><br></font>
+				<center><font color =white><h1>Projeto Embarcados - MQTT</h1><br></font>
 				
 				</center>
 			</td>
 		</tr>		
 	</table>
 
-<div id="publish">
-    <br>
-	<font color="#3D3D3F"><b>1º passo:</b></font> definir os tópicos MQTT de subscribe e publish:
-	<p>Tópico de envio de informações: <input class="txt" id="pub-topic-text" type="text" value=""></p>
-	<p>Tópico de recepcao de informações: <input class="txt" id="pub-subscribe-text" type="text" value=""></p>
-	<br>
-	
-	<!--<input class="but" id="liga-output" type="button"    value="  Ligar "><br><br>
-	<input class="but" id="desliga-output" type="button" value="Desligar"><br><br>-->
-	
-</div>	 
+
 	
 <div id="broker">
-	<font color="#3D3D3F"><b>2º Passo:</b></font> conectar-se ao servidor / broker:<br><br>
+	<font color="#3D3D3F"><b>1º Passo:</b></font> Conecte-se ao servidor / broker:<br><br>
 	<input class="but" id="connect-button" type="button" value="Conectar">
 	<input class="but" id="disconnect-button" type="button" value="Desconectar">
 </div>
+
 <br><br>
-<font color="#3D3D3F"><b>3º passo:</b></font> escolha a ação desejada:<br><br>
+<font color="#3D3D3F"><b>2º passo:</b></font> Escolha a ação desejada:<br><br>
 <input class="but" id="liga-output" type="button"    value="  Ligar ">
 <input class="but" id="desliga-output" type="button" value="Desligar"><br><br>
 
 
 <p><font color="#3D3D3F"><b>Status da Saida:</b></font></p>
-<div id="status_io"></div>
+<b>Temperatura:</b> <div id="status_io"></div>
+
+<b>Saida:</b> <div id="status_io"></div>
 
 <p><b>Debug / respostas do servidor:</b></p>
 <div id="debug"></div>

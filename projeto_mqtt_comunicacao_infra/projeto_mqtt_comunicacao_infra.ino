@@ -1,28 +1,62 @@
-
-
 #include <ESP8266WiFi.h> // Importa a Biblioteca ESP8266WiFi
 #include <PubSubClient.h> // Importa a Biblioteca PubSubClient
+
+#include <IRremoteESP8266.h> //INCLUSÃO DE BIBLIOTECA
+#include <IRsend.h>
+
+#define led_ir 14
+
+IRsend irsend(led_ir); //FUNÇÃO RESPONSÁVEL PELO MÉTODO DE ENVIO DO SINAL IR / UTILIZA O GPIO14(D5)
+
+int tamanho = 67; //TAMANHO DA LINHA RAW(68 BLOCOS)
+int frequencia = 38; //FREQUÊNCIA DO SINAL IR(32KHz)
+
+//botao liga
+uint16_t liga[] = {4600, 4150, 800, 1350, 800, 300, 750, 1400, 750,
+                   1400, 750, 300, 800, 300, 750, 1400, 750, 350, 750,
+                   300, 750, 1450, 700, 350, 700, 400, 700, 1450, 700,
+                   1450, 700, 400, 650, 1500, 650, 400, 700, 400, 650,
+                   450, 650, 1500, 650, 1500, 650, 1500, 650, 1500, 650,
+                   1500, 650, 1550, 600, 1500, 650, 1550, 600, 450, 600,
+                   500, 600, 450, 650, 450, 650, 450, 600, 450, 650, 450,
+                   600, 1550, 600, 500, 600, 450, 650, 1500, 600, 500, 600,
+                   500, 600, 1550, 600, 1550, 600, 500, 600, 1500, 650,
+                   1550, 600, 450, 600, 1550, 600, 1550, 600
+                  };
+
+//botao desliga
+uint16_t desliga[] = {4500, 4200, 650, 1450, 700, 400, 650, 1450, 650, 1500,
+                      650, 400, 650, 450, 650, 1500, 600, 450, 650, 450, 600,
+                      1500, 650, 450, 600, 500, 600, 1500, 600, 1550, 600, 450,
+                      600, 1550, 600, 450, 600, 1550, 600, 1550, 600, 1550, 600,
+                      1550, 600, 450, 600, 1550, 600, 1500, 600, 1550, 600, 450,
+                      600, 500, 600, 450, 600, 500, 550, 1550, 600, 500, 550, 500,
+                      600, 1550, 600, 1500, 600, 1550, 600, 500, 550, 500, 600,
+                      450, 600, 500, 600, 450, 600, 500, 600, 450, 600, 450, 600,
+                      1550, 600, 1550, 600, 1550, 550, 1600, 550, 1550, 550
+                     };
 
 //defines:
 //defines de id mqtt e tópicos para publicação e subscribe
 #define TEMPERATURA_SUBSCRIBE "mcu/temperatura/EnviaSensor"     //tópico MQTT de escuta
 #define TEMPERATURA_PUBLISH   "mcu/temperatura/RecebeSensor"    //tópico MQTT de envio de informações para Broker
-                                                   //IMPORTANTE: recomendamos fortemente alterar os nomes
-                                                   //            desses tópicos. Caso contrário, há grandes
-                                                   //            chances de você controlar e monitorar o NodeMCU
-                                                   //            de outra pessoa.
-#define SAIDA_SUBSCRIBE "mcu/saida/EnviaSensor"    
+//IMPORTANTE: recomendamos fortemente alterar os nomes
+//            desses tópicos. Caso contrário, há grandes
+//            chances de você controlar e monitorar o NodeMCU
+//            de outra pessoa.
+#define SAIDA_SUBSCRIBE "mcu/saida/EnviaSensor"
 #define SAIDA_PUBLISH   "mcu/saida/RecebeSensor"
 
 
 #define ID_MQTT  "SessaoProjEmbarcadosA"     //id mqtt (para identificação de sessão)
-                               //IMPORTANTE: este deve ser único no broker (ou seja, 
-                               //            se um client MQTT tentar entrar com o mesmo 
-                               //            id de outro já conectado ao broker, o broker 
-                               //            irá fechar a conexão de um deles).
-                               
+//IMPORTANTE: este deve ser único no broker (ou seja,
+//            se um client MQTT tentar entrar com o mesmo
+//            id de outro já conectado ao broker, o broker
+//            irá fechar a conexão de um deles).
+
 
 //defines - mapeamento de pinos do NodeMCU
+//defines - nome - numero do pino
 #define D0    16
 #define D1    5
 #define D2    4
@@ -39,7 +73,7 @@
 // WIFI
 const char* SSID = "MotoG"; // SSID / nome da rede WI-FI que deseja se conectar
 const char* PASSWORD = "12345678"; // Senha da rede WI-FI que deseja se conectar
- 
+
 // MQTT
 const char* BROKER_MQTT = "iot.eclipse.org"; //URL do broker MQTT que se deseja utilizar
 int BROKER_PORT = 1883; // Porta do Broker MQTT
@@ -50,193 +84,202 @@ WiFiClient espClient; // Cria o objeto espClient
 PubSubClient MQTT(espClient); // Instancia o Cliente MQTT passando o objeto espClient
 char EstadoSaida = '0';  //variável que armazena o estado atual da saída
 
- 
+
 //Prototypes
 void initSerial();
 void initWiFi();
 void initMQTT();
-void reconectWiFi(); 
+void reconectWiFi();
 void mqtt_callback(char* topic, byte* payload, unsigned int length);
 void VerificaConexoesWiFIEMQTT(void);
 void InitOutput(void);
 
-/* 
- *  Implementações das funções
- */
-void setup() 
+/*
+    Implementações das funções
+*/
+void setup()
 {
-    //inicializações:
-    InitOutput();
-    initSerial();
-    initWiFi();
-    initMQTT();
+  //inicializações:
+  irsend.begin();
+  InitOutput();
+  initSerial();
+  initWiFi();
+  initMQTT();
 }
- 
-//Função: inicializa comunicação serial com baudrate 115200 (para fins de monitorar no terminal serial 
+
+//Função: inicializa comunicação serial com baudrate 115200 (para fins de monitorar no terminal serial
 //        o que está acontecendo.
 //Parâmetros: nenhum
 //Retorno: nenhum
-void initSerial() 
+void initSerial()
 {
-    Serial.begin(115200);
+  Serial.begin(115200);
 
-    pinMode(A0, INPUT);
+
 }
 
 //Função: inicializa e conecta-se na rede WI-FI desejada
 //Parâmetros: nenhum
 //Retorno: nenhum
-void initWiFi() 
+void initWiFi()
 {
-    delay(10);
-    Serial.println("------Conexao WI-FI------");
-    Serial.print("Conectando-se na rede: ");
-    Serial.println(SSID);
-    Serial.println("Aguarde");
-    
-    reconectWiFi();
+  delay(10);
+  Serial.println("------Conexao WI-FI------");
+  Serial.print("Conectando-se na rede: ");
+  Serial.println(SSID);
+  Serial.println("Aguarde");
+
+  reconectWiFi();
 }
- 
-//Função: inicializa parâmetros de conexão MQTT(endereço do 
+
+//Função: inicializa parâmetros de conexão MQTT(endereço do
 //        broker, porta e seta função de callback)
 //Parâmetros: nenhum
 //Retorno: nenhum
-void initMQTT() 
+void initMQTT()
 {
-    MQTT.setServer(BROKER_MQTT, BROKER_PORT);   //informa qual broker e porta deve ser conectado
-    MQTT.setCallback(mqtt_callback);            //atribui função de callback (função chamada quando qualquer informação de um dos tópicos subescritos chega)
+  MQTT.setServer(BROKER_MQTT, BROKER_PORT);   //informa qual broker e porta deve ser conectado
+  MQTT.setCallback(mqtt_callback);            //atribui função de callback (função chamada quando qualquer informação de um dos tópicos subescritos chega)
 }
- 
-//Função: função de callback 
-//        esta função é chamada toda vez que uma informação de 
+
+//Função: função de callback
+//        esta função é chamada toda vez que uma informação de
 //        um dos tópicos subescritos chega)
 //Parâmetros: nenhum
 //Retorno: nenhum
-void mqtt_callback(char* topic, byte* payload, unsigned int length) 
+void mqtt_callback(char* topic, byte* payload, unsigned int length)
 {
-    String msg;
+  String msg;
 
-    //obtem a string do payload recebido
-    for(int i = 0; i < length; i++) 
-    {
-       char c = (char)payload[i];
-       msg += c;
-    }
-  
-    //toma ação dependendo da string recebida:
-    //verifica se deve colocar nivel alto de tensão na saída D0:
-    //IMPORTANTE: o Led já contido na placa é acionado com lógica invertida (ou seja,
-    //enviar HIGH para o output faz o Led apagar / enviar LOW faz o Led acender)
-    Serial.println(msg);
-    if (msg.equals("L"))
-    {
-        digitalWrite(D0, LOW);
-        EstadoSaida = '1';
-    }
+  //obtem a string do payload recebido
+  for (int i = 0; i < length; i++)
+  {
+    char c = (char)payload[i];
+    msg += c;
+  }
 
-    //verifica se deve colocar nivel alto de tensão na saída D0:
-    if (msg.equals("D"))
-    {
-        digitalWrite(D0, HIGH);
-        EstadoSaida = '0';
-    }
-    
+  //toma ação dependendo da string recebida:
+  //verifica se deve colocar nivel alto de tensão na saída D0:
+  //IMPORTANTE: o Led já contido na placa é acionado com lógica invertida (ou seja,
+  //enviar HIGH para o output faz o Led apagar / enviar LOW faz o Led acender)
+  Serial.println(msg);
+  if (msg.equals("L"))
+  {
+    irsend.sendRaw(liga, tamanho, frequencia); // PARÂMETROS NECESSÁRIOS PARA ENVIO DO SINAL IR
+    Serial.println("Comando enviado: Liga / Desliga");
+    delay(50); // TEMPO(EM MILISEGUNDOS) DE INTERVALO ENTRE UM COMANDO E OUTRO
+
+    digitalWrite(led_ir, LOW);
+    EstadoSaida = '1';
+  }
+
+  //verifica se deve colocar nivel alto de tensão na saída D0:
+  if (msg.equals("D"))
+  {
+    irsend.sendRaw(desliga, tamanho, frequencia); // PARÂMETROS NECESSÁRIOS PARA ENVIO DO SINAL IR
+    Serial.println("Comando enviado: Liga / Desliga");
+    delay(50); // TEMPO(EM MILISEGUNDOS) DE INTERVALO ENTRE UM COMANDO E OUTRO
+
+    digitalWrite(led_ir, HIGH);
+     EstadoSaida = '0';
+  }
+
 }
- 
+
 //Função: reconecta-se ao broker MQTT (caso ainda não esteja conectado ou em caso de a conexão cair)
 //        em caso de sucesso na conexão ou reconexão, o subscribe dos tópicos é refeito.
 //Parâmetros: nenhum
 //Retorno: nenhum
-void reconnectMQTT() 
+void reconnectMQTT()
 {
-    while (!MQTT.connected()) 
+  while (!MQTT.connected())
+  {
+    Serial.print("* Tentando se conectar ao Broker MQTT: ");
+    Serial.println(BROKER_MQTT);
+    if (MQTT.connect(ID_MQTT))
     {
-        Serial.print("* Tentando se conectar ao Broker MQTT: ");
-        Serial.println(BROKER_MQTT);
-        if (MQTT.connect(ID_MQTT)) 
-        {
-            Serial.println("Conectado com sucesso ao broker MQTT!");
-            MQTT.subscribe(TEMPERATURA_SUBSCRIBE); 
-       
-        } 
-        else 
-        {
-            Serial.println("Falha ao reconectar no broker.");
-            Serial.println("Havera nova tentatica de conexao em 2s");
-            delay(2000);
-        }
+      Serial.println("Conectado com sucesso ao broker MQTT!");
+      MQTT.subscribe(TEMPERATURA_SUBSCRIBE);
+
     }
+    else
+    {
+      Serial.println("Falha ao reconectar no broker.");
+      Serial.println("Havera nova tentatica de conexao em 2s");
+      delay(2000);
+    }
+  }
 }
- 
+
 //Função: reconecta-se ao WiFi
 //Parâmetros: nenhum
 //Retorno: nenhum
-void reconectWiFi() 
+void reconectWiFi()
 {
-    //se já está conectado a rede WI-FI, nada é feito. 
-    //Caso contrário, são efetuadas tentativas de conexão
-    if (WiFi.status() == WL_CONNECTED)
-        return;
-        
-    WiFi.begin(SSID, PASSWORD); // Conecta na rede WI-FI
-    
-    while (WiFi.status() != WL_CONNECTED) 
-    {
-        delay(100);
-        Serial.print(".");
-    }
-  
-    Serial.println();
-    Serial.print("Conectado com sucesso na rede ");
-    Serial.print(SSID);
-    Serial.println("IP obtido: ");
-    Serial.println(WiFi.localIP());
+  //se já está conectado a rede WI-FI, nada é feito.
+  //Caso contrário, são efetuadas tentativas de conexão
+  if (WiFi.status() == WL_CONNECTED)
+    return;
+
+  WiFi.begin(SSID, PASSWORD); // Conecta na rede WI-FI
+
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(100);
+    Serial.print(".");
+  }
+
+  Serial.println();
+  Serial.print("Conectado com sucesso na rede ");
+  Serial.print(SSID);
+  Serial.println("IP obtido: ");
+  Serial.println(WiFi.localIP());
 }
 
-//Função: verifica o estado das conexões WiFI e ao broker MQTT. 
+//Função: verifica o estado das conexões WiFI e ao broker MQTT.
 //        Em caso de desconexão (qualquer uma das duas), a conexão
 //        é refeita.
 //Parâmetros: nenhum
 //Retorno: nenhum
 void VerificaConexoesWiFIEMQTT(void)
 {
-    if (!MQTT.connected()) 
-        reconnectMQTT(); //se não há conexão com o Broker, a conexão é refeita
-    
-     reconectWiFi(); //se não há conexão com o WiFI, a conexão é refeita
+  if (!MQTT.connected())
+    reconnectMQTT(); //se não há conexão com o Broker, a conexão é refeita
+
+  reconectWiFi(); //se não há conexão com o WiFI, a conexão é refeita
 }
 
-//Função: envia ao Broker a temperatura do sensor 
+//Função: envia ao Broker a temperatura do sensor
 
 String getTemperatura(void)
 {
-    float millivolts = (analogRead(A0)/1024.0) * 3300; //3300 is the voltage provided by NodeMCU
-    float temp_c = millivolts/10;
+  float millivolts = (analogRead(A0) / 1024.0) * 3300; //3300 is the voltage provided by NodeMCU
+  float temp_c = millivolts / 10;
 
-    //Serial.println("Temperatura:" + String(temp_c));
-    
-    //MQTT.publish(TOPICO_PUBLISH, String(temp_c).c_str());
+  //Serial.println("Temperatura:" + String(temp_c));
 
-    //Serial.println("- Estado de temperatura enviado ao broker!");
-    return String(temp_c);
-    delay(1000);
+  //MQTT.publish(TOPICO_PUBLISH, String(temp_c).c_str());
+
+  //Serial.println("- Estado de temperatura enviado ao broker!");
+  return String(temp_c);
+  delay(1000);
 }
 
-//Função: envia ao Broker o estado atual do output 
+//Função: envia ao Broker o estado atual do output
 //Parâmetros: nenhum
 //Retorno: nenhum
 String getEstadoSaida(void)
 {
   String estado;
-    if (EstadoSaida == '0')
-      estado =  "D";
+  if (EstadoSaida == '0')
+    estado =  "D";
 
-    if (EstadoSaida == '1')
-     estado = "L";
+  if (EstadoSaida == '1')
+    estado = "L";
 
-    return estado;
-    Serial.println("- Estado da saida D0 enviado ao broker!");
-    delay(1000);
+  return estado;
+  Serial.println("- Estado da saida D0 enviado ao broker!");
+  delay(1000);
 }
 
 //Função: inicializa o output em nível lógico baixo
@@ -244,32 +287,36 @@ String getEstadoSaida(void)
 //Retorno: nenhum
 void InitOutput(void)
 {
-    //IMPORTANTE: o Led já contido na placa é acionado com lógica invertida (ou seja,
-    //enviar HIGH para o output faz o Led apagar / enviar LOW faz o Led acender)
-    pinMode(D0, OUTPUT);
-    digitalWrite(D0, HIGH);          
+  //IMPORTANTE: o Led já contido na placa é acionado com lógica invertida (ou seja,
+  //enviar HIGH para o output faz o Led apagar / enviar LOW faz o Led acender)
+  pinMode(D0, OUTPUT);
+  pinMode(led_ir, OUTPUT);
+  
+  digitalWrite(D0, HIGH);
+  digitalWrite(led_ir, LOW);
 }
 
 
 //programa principal
-void loop() 
-{   
-    //garante funcionamento das conexões WiFi e ao broker MQTT
-    VerificaConexoesWiFIEMQTT();
+void loop()
+{
+  //garante funcionamento das conexões WiFi e ao broker MQTT
+  VerificaConexoesWiFIEMQTT();
 
-    //envia o status de todos os outputs para o Broker no protocolo esperado
-    String estado = getEstadoSaida();
+  //envia o status de todos os outputs para o Broker no protocolo esperado
+  String estado = getEstadoSaida();
 
-    String temperatura = getTemperatura();
+  String temperatura = getTemperatura();
 
-    //String payload_temperatura = "{temperatura:"+temperatura+"}";
-    
-    //MQTT.publish(TEMPERATURA_PUBLISH, payload_temperatura.c_str());
+  //String payload_temperatura = "{temperatura:"+temperatura+"}";
 
-    String payload_saida = "{saida:"+estado+"}";
-    MQTT.publish(SAIDA_PUBLISH, payload_saida.c_str());
+  //MQTT.publish(TEMPERATURA_PUBLISH, payload_temperatura.c_str());
 
+  String payload_saida = "{saida:" + estado + "}";
+  MQTT.publish(SAIDA_PUBLISH, payload_saida.c_str());
 
-    //keep-alive da comunicação com broker MQTT
-    MQTT.loop();
+ // MQTT.subscribe(TEMPERATURA_SUBSCRIBE, payload_saida.c_str());
+
+  //keep-alive da comunicação com broker MQTT
+  MQTT.loop();
 }

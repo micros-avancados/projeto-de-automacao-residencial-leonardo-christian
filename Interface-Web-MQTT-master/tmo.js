@@ -72,21 +72,17 @@
 
 				var temperatura = payload.includes("temperatura");
 
-				if (saida)
-				{
-					console.log(payload);
-				}
+				
+					res = payload.split(":");
 
-				if (temperatura)
-				{
 					p.innerHTML = payload
 					$("#status_io").html(p);
-					
-					var payload = temperatura;  
+
+					var payload = payload;  
 					var TopicPublish = "mcu/temperatura/EnviaSensor";				
 					mosq.publish(TopicPublish, payload, 0);
 					
-				}
+				
 					
 				
 				//escreve o estado do output conforme informação recebida
